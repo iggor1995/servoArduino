@@ -6,7 +6,7 @@
   //rightmove = left(false) + right(false)
   //upMove = left(false) + right(true)
   //downMove = left(true) + right(false)
-  //*******************constants****************
+  //*******************constants******************
   int clkLeft = 9;
   int clkRight = 10; 
   int cwLeftMotor = 11;
@@ -14,16 +14,16 @@
   int maxPartsOnLevel = 8;
   int maxPartsInRow = 4;
   int motorSpeed = 50;
-  int grabingPartXCoord;// = ;
-  int grabbingPartYCoord;// = ;
-  int xFirstCellPos;// = ;
-  int xDelta;// = ;
-  int firstLevelY;// = ;
-  int secondLevelY;// = 
-  int thirdLevelY;// = 
-  int fourthLevelY;// = 
-  int fifthLevelY;// = 
-  int sixthLevelY;// = 
+  int grabbingPartXCoord = 1500;
+  int grabbingPartYCoord = 24000;
+  int xFirstCellPos = 800;
+  int xDelta = 2200;
+  int firstLevelY = 21700;
+  int secondLevelY = 18100;// = 
+  int thirdLevelY = 14500;// = 
+  int fourthLevelY = 10600;// = 
+  int fifthLevelY = 6700;// = 
+  int sixthLevelY = 2800;// = 
   //**********************************************
   int redPartCount;
   int transparentPartCount;
@@ -34,12 +34,12 @@
   int typeA;
   int typeB;
   //********************************************
-  int x;
-  int y;
+  int x = 0;
+  int y = 0;
   // level1 and level2 and partsCount are changed due to type of part. initialized in checkColor() method
-  int lowerLevel;
-  int higherLevel;
-  int partsCount;
+  int lowerLevel = firstLevelY;
+  int higherLevel = secondLevelY;
+  int partsCount = 2;
   //*****************************************************************************************************
 void setup() {
   // put your setup code here, to run once:
@@ -51,9 +51,16 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  movePart(2);
+  moveUp(5000);
+  movePart(5);
+  moveUp(5000);
+  movePart(10);
+  moveUp(5000);
 }
  //Listents if movement allowed
   void commandListener(){
+    int partCount;
     if(digitalRead(isAllowedToMove) == true){
       moveToGrabbingPos();
       partCount = checkColor();
@@ -67,35 +74,36 @@ void loop() {
  void movePart(int partCount){
     int delta;
     if(partCount < maxPartsOnLevel){
-      void yMoveToPos(lowerLevel);
+      yMoveToPos(lowerLevel);
     } 
     else{
-      void yMoveToPos(higherLevel);
+      yMoveToPos(higherLevel);
+      partCount = partCount - maxPartsInRow;
     }
     xMoveToPos(xFirstCellPos); // move to first sell int row
     if(partCount < maxPartsInRow){
-      delta = xDelta * redPartCount;
+      delta = xDelta * partCount;
     }
     else{
-      delta = xDelta * (redPartCount - maxPartsInRow);
+      delta = xDelta * (partCount - maxPartsInRow);
     }
-    moveRigt(delta);
+    moveRight(delta);
   }
 // moves grabber to grabbing pos, where part has been set
   void moveToGrabbingPos(){
-    xMoveToPos(grabingPartXCoord);
-    yMoveToPos(grabingPartYCoord);
+    xMoveToPos(grabbingPartXCoord);
+    yMoveToPos(grabbingPartYCoord);
   }
 // move grabber to absolute position by x coordinates
   void xMoveToPos(int pos){
     int moveX;
     if(pos > x){
       moveX = pos - x;
-      moveLeft(moveX)
+      moveRight(moveX);
     }
     if(pos < x){
       moveX = x - pos;
-      moveRight(moveX)
+      moveLeft(moveX);
     }    
   }
 // move grabber to absolute position by y coordinates
@@ -103,11 +111,11 @@ void loop() {
     int moveY;
     if(pos > y){
       moveY = pos - y;
-      moveDown(moveY)
+      moveDown(moveY);
     }
-    if(pos < y){
+    else{
       moveY = y - pos;
-      moveUp(moveY)
+      moveUp(moveY);
     }    
   }
   //checks color or type of the part and set level1 and level2
@@ -115,9 +123,9 @@ void loop() {
     if(typeA == true){
       if(typeB == true){
         //sort next 
-   return // certain part count     
+      // certain part count     
       }
-      else(){
+      else{
           //sort next
         }
     }
@@ -125,12 +133,11 @@ void loop() {
       if(typeB == true){
         //sort next
       }
-      else(){
+      else{
           //sort next
         }
     }
   }
-
 //******************main methods for movement*****************************************
   void getBackToInitial(){
       moveLeft(x);
@@ -142,6 +149,7 @@ void loop() {
     changeDir(true, cwLeftMotor);
     changeDir(true, cwRightMotor);
     moveMotors(xRel);
+    delay(10);
   }
 // change direction to left and move
 // xRel = relative coordinate changes  
@@ -149,6 +157,7 @@ void loop() {
     changeDir(false, cwLeftMotor);
     changeDir(false, cwRightMotor);
     moveMotors(xRel);
+    delay(10);
   }
 // change direction to upward and move
 // xRel = relative coordinate changes
@@ -156,6 +165,7 @@ void loop() {
     changeDir(false, cwLeftMotor);
     changeDir(true, cwRightMotor);
     moveMotors(xRel);
+    delay(10);
   }
 // change direction to downward and move
 // xRel = relative coordinate changes
@@ -163,6 +173,7 @@ void loop() {
     changeDir(true, cwLeftMotor);
     changeDir(false, cwRightMotor);
     moveMotors(xRel);
+    delay(10);
   }
 //****************************************************************************************************
 
@@ -181,7 +192,7 @@ void loop() {
       if(digitalRead(cwRightMotor) == true){  //left(true) right(true) Left Move
         x--;
       }
-      if(digitalRead(cwRightMotor) == false){  //left(true) right(false) Up Move
+      else{  //left(true) right(false) Up Move
         y++;
       }
     }
@@ -189,7 +200,7 @@ void loop() {
       if(digitalRead(cwRightMotor) == true){  //left(false) right(true) Down Move
         y--;
       }
-      if(digitalRead(cwRightMotor) == false){  //left(false) right(false) Right Move
+      else{  //left(false) right(false) Right Move
         x++;
       }
     }
