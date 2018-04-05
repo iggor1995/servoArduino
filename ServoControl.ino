@@ -32,21 +32,22 @@
   boolean permissionSet;
   boolean manualMode;
   int counterLap = 0;
-  int redPartCount;
-  int transparentPartCount;
-  int metalPartCount;
+  int redPartCount = 0;
+  int transparentPartCount = 0;
+  int metalPartCount = 0;
+  int colorNumber = 0; // 10 - red | 20 - transparent | metal - 30
   //main var for listener
   //*****************from FX5U controller*******
   int isAllowedToMove;
-  int typeA;
-  int typeB;
+  int typeA = 3;
+  int typeB = 4;
   //********************************************
   int x = 0;
   int y = 0;
   // level1 and level2 and partsCount are changed due to type of part. initialized in checkColor() method
   int lowerLevel;
   int higherLevel;
-  int partsCount = 2;
+  int partCount;
   //*****************************************************************************************************
 void setup() {
   // put your setup code here, to run once:
@@ -56,6 +57,8 @@ void setup() {
   pinMode(cwRightMotor, OUTPUT);
   pinMode(releaseStop, OUTPUT);
   pinMode(manualMove, INPUT);
+  pinMode(typeA, INPUT);
+  pinMode(typeB, INPUT);
 }
 
 void loop() {
@@ -86,8 +89,11 @@ void loop() {
   //waits for permission to move, if gots permission, then moves to placing point 
   // then sends command to FX5U that gripper has been placed
   void secondMove(){
-    //movePart(checkColor());
-    movePart(36);
+    int colorNumber = checkColor();
+    if(coordin != 0){
+      movePart(colorNumber);
+    }
+    //movePart(36);
   }
 //    permissionListener();
 //    if(permissionSet == true){
@@ -108,68 +114,79 @@ void loop() {
        //do nothing
     }
   }
-    //checks color or type of the part and set level1 and level2
-  int checkColor(){
-    if(typeA == true){
-      if(typeB == true){
-        //sort next 
-        // certain part count
-        redPartCount++;
-        return redPartCount + 10;      //1* - means red part and cell depends on *      
-      }
-      else{
-          //sort next
-          transparentPartCount++;
-          return transparentPartCount + 20;  //2* - means transparent part and cell depends on *
-        }
-    }
-    else{
-      if(typeB == true){
-          metalPartCount++;  
-          return metalPartCount + 30;    //   3* - means metal part and cell depends on * digit 
-        }
-      else{
-          //sort next
-        }
-    }
-  }
-  int setLevels(int color){
-    if(color < 20){    //RED COLOR
-        lowerLevel = firstLevelY;
-        higherLevel = secondLevelY;
-        return 10;
-    }
-    else if(color < 30){    //TRANSPARENT COLOR
-        lowerLevel = thirdLevelY;
-        higherLevel = fourthLevelY;
-        return 20;
-    }
-    else{    //TRANSPARENT COLOR
-        lowerLevel = fifthLevelY;
-        higherLevel = sixthLevelY;
-        return 30;
-    }
-  }
+   
 //moves certain part to certain position
  void movePart(int color){
-   int partCount = color - setLevels(color);
     int delta;
-    if(partCount < maxPartsOnLevel){
+    setLevels(color); 
+    
+    if(partCount <= maxPartsOnLevel){
       yMoveToPos(lowerLevel);
     } 
     else{
       yMoveToPos(higherLevel);
-      partCount = partCount - maxPartsInRow;
+      partCount = partCount - maxPartsOnLevel;
     }
     xMoveToPos(xFirstCellPos); // move to first sell int row
-    if(partCount < maxPartsInRow){
-      delta = xDelta * partCount;
+    if(partCount <= maxPartsInRow){
+      delta = xDelta * (partCount - 1);
     }
     else{
-      delta = xDelta * (partCount - maxPartsInRow);
+      delta = xDelta * (partCount - maxPartsInRow - 1);
     }
     moveRight(delta);
   }
+  
+   //checks color or type of the part and set level1 and level2
+  int checkColor(){
+    if(digitalRead(typeA) == HIGH){
+      if(digitalRead(typeB) == HIGH){
+        // sort next 
+        // certain part count
+        redPartCount++;
+        colorNumber = 1;
+        return colorNumber;      //1* - means red part and cell depends on *      
+      }
+      else{
+          //sort next
+          transparentPartCount++;
+          colorNumber = 2;
+          return colorNumber;  //2* - means transparent part and cell depends on *
+        }
+    }
+    else{
+      if(digitalRead(typeB) == HIGH){
+          metalPartCount++;
+        colorNumber = 3;  
+          return colorNumber;    //3* - means metal part and cell depends on * digit 
+        }
+      else{
+          //sort next
+          return 0;
+        }
+    }
+  }
+  
+  //method sets global level coordinates and global variable partCount
+  //color - number of color : 1 - red; 2 - transparent; 3 - metal;
+  void setLevelsandPartCount(int color){
+    if(color == 1){    //RED COLOR
+        lowerLevel = firstLevelY;
+        higherLevel = secondLevelY;
+        partCount = redPartCount;
+    }
+    else if(color == 2){    //TRANSPARENT COLOR
+        lowerLevel = thirdLevelY;
+        higherLevel = fourthLevelY;
+        partCount = transparentPartCount;
+    }
+    else{    //METAL COLOR
+        lowerLevel = fifthLevelY;
+        higherLevel = sixthLevelY;
+        partCount = metalPartCount;
+    }
+  }
+  
 // moves grabber to grabbing pos, where part has been set
   void moveToGrabbingPos(){
     xMoveToPos(grabbingPartXCoord);
@@ -255,7 +272,7 @@ void loop() {
   }
 //****************************************************************************************************
 
-//move each motor impulseCount times  and change global coordinates : x and y
+//move each motor [impulseCount] times  and change global coordinates : x and y
   void moveMotors(int impulseCount){
     //digitalWrite(releaseStop, HIGH);
       for(int i = 0; i < impulseCount; i++){
