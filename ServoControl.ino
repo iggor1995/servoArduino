@@ -17,18 +17,18 @@
   int maxPartsOnLevel = 8;
   int maxPartsInRow = 4;
   int motorSpeed = 50;
-  int grabbingPartXCoord = 1500;
-  int grabbingPartYCoord = 24000;
-  int xFirstCellPos = 800;
-  int xDelta = 2200;
+  int grabbingPartXCoord = 1400;
+  int grabbingPartYCoord = 24780;
+  int xFirstCellPos = 600;
+  int xDelta = 2275;
   int firstLevelY = 21700;
   int secondLevelY = 18100;
-  int thirdLevelY = 14500; 
+  int thirdLevelY = 13800; 
   int fourthLevelY = 10600; 
   int fifthLevelY = 6700; 
   int sixthLevelY = 2800; 
   //**********************************************
-  boolean isGripperPlaced;
+  int isGripperPlaced = 6;
   boolean permissionSet;
   boolean manualMode;
   int counterLap = 0;
@@ -38,7 +38,7 @@
   int colorNumber = 0; // 10 - red | 20 - transparent | metal - 30
   //main var for listener
   //*****************from FX5U controller*******
-  int isAllowedToMove;
+  int isAllowedToMove = 4;
   int typeA = 3;
   int typeB = 4;
   //********************************************
@@ -59,82 +59,84 @@ void setup() {
   pinMode(manualMove, INPUT);
   pinMode(typeA, INPUT);
   pinMode(typeB, INPUT);
+  pinMode(isAllowedToMove, INPUT);
+  pinMode(isGripperPlaced, OUTPUT);
+  pinMode(6, OUTPUT);
 }
-
+int xg = 0;
 void loop() {
   // put your main code here, to run repeatedly:
-//  
-    firstMove();
-    secondMove();
-    checkManualMove();
+//    firstMove();
+//    delay(2000);
+//    secondMove();
+//    checkManualMove();
+//    delay(2000);
+      //digitalWrite(releaseStop, HIGH);
+      
+      if(xg == 0){
+        xg++;
+        moveToGrabbingPos();
+        delay(4000);
+        yMoveToPos(thirdLevelY);
+        delay(7000);
+        getBackToInitial();
+      }
 }
 
-  //void main(){
-   // firstMove(); //move to part griping position
-    //secondMove(); //move to part placing position
-  //}
-  
+///////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
   //waits for permission to move, if gots permission, then moves to grabbing point 
   // then sends command to FX5U that gripper has been placed
   void firstMove(){
-    //permissionListener();
-   // if(permissionSet == true){
-      //isGripperPlaced = false;
+    while(digitalRead(permissionSet) != true){
+      //do nothing
+    }
+    digitalWrite(isGripperPlaced, LOW);
+    if(digitalRead(permissionSet) == true){
       moveToGrabbingPos();
       delay(1000);
-      //isGripperPlaced = true;
-      //permissionSet = false;
-    //}
+      digitalWrite(isGripperPlaced, HIGH);
+    }
   }
   //waits for permission to move, if gots permission, then moves to placing point 
   // then sends command to FX5U that gripper has been placed
   void secondMove(){
-    int colorNumber = checkColor();
-    if(coordin != 0){
-      movePart(colorNumber);
+    while(digitalRead(permissionSet) != true){
+      //do nothing
     }
-    //movePart(36);
+     digitalWrite(isGripperPlaced, LOW);
+     if(digitalRead(permissionSet) == true){
+        int colorNumber = checkColor();
+        if(colorNumber != 0){
+          movePart(colorNumber);
+          digitalWrite(isGripperPlaced, HIGH);
+        }
+     }
+     
   }
-//    permissionListener();
-//    if(permissionSet == true){
-//      currentPartsCount = checkColor();
-//      isGripperPlaced = false;
-//      movePart(currentPartsCount);
-//      isGripperPlaced = true;
-//      permissionSet = false;
-//    }
-//  }
- //Listents if movement allowed
-  void permissionListener(){
-    int partCount;
-    if(digitalRead(isAllowedToMove) == true){
-      permissionSet = true;                    //if allowed to move
-    }
-    else{
-       //do nothing
-    }
-  }
-   
+//////////////////////////////////////////////////////////////////////   
+/////////////////////////////////////////////////////////////////////
 //moves certain part to certain position
  void movePart(int color){
     int delta;
-    setLevels(color); 
-    
-    if(partCount <= maxPartsOnLevel){
-      yMoveToPos(lowerLevel);
-    } 
-    else{
-      yMoveToPos(higherLevel);
-      partCount = partCount - maxPartsOnLevel;
+    setLevelsandPartCount(color); 
+    if(partCount > 16){
+      if(partCount <= maxPartsOnLevel){
+        yMoveToPos(lowerLevel);
+      } 
+      else{
+        yMoveToPos(higherLevel);
+        partCount = partCount - maxPartsOnLevel;
+      }
+      xMoveToPos(xFirstCellPos); // move to first sell int row
+      if(partCount <= maxPartsInRow){
+        delta = xDelta * (partCount - 1);
+      }
+      else{
+        delta = xDelta * (partCount - maxPartsInRow - 1);
+      }
+      moveRight(delta);
     }
-    xMoveToPos(xFirstCellPos); // move to first sell int row
-    if(partCount <= maxPartsInRow){
-      delta = xDelta * (partCount - 1);
-    }
-    else{
-      delta = xDelta * (partCount - maxPartsInRow - 1);
-    }
-    moveRight(delta);
   }
   
    //checks color or type of the part and set level1 and level2
@@ -192,6 +194,11 @@ void loop() {
     xMoveToPos(grabbingPartXCoord);
     yMoveToPos(grabbingPartYCoord);
   }
+//******************main methods for movement*****************************************
+  void getBackToInitial(){
+      xMoveToPos(0);
+      yMoveToPos(0);
+  }
 // move grabber to absolute position by x coordinates
   void xMoveToPos(int pos){
     int moveX;
@@ -204,6 +211,7 @@ void loop() {
       moveLeft(moveX);
     }    
   }
+  
 // move grabber to absolute position by y coordinates
    void yMoveToPos(int pos){
     int moveY;
@@ -211,17 +219,16 @@ void loop() {
       moveY = pos - y;
       moveDown(moveY);
     }
-    else{
+    else if(pos < y){
       moveY = y - pos;
       moveUp(moveY);
+    }
+    else{
+        //do nothing
     }    
   }
 
-//******************main methods for movement*****************************************
-  void getBackToInitial(){
-      moveLeft(x);
-      moveUp(y);
-  }
+
 // change direction to down and move
 // xRel = relative coordinate changes
   void moveLeft(int xRel){
