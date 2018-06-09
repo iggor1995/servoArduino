@@ -8,6 +8,7 @@
   //*******************constants******************
   boolean grabbingStage;
   boolean movingToSellStage;
+  int gripInPlace = 7;
   int manualMove = 2;
   int releaseStop = 8;
   int clkLeft = 9;
@@ -28,9 +29,7 @@
   int fifthLevelY = 6700; 
   int sixthLevelY = 2800; 
   //**********************************************
-  int isGripperPlaced = 6;
-  boolean permissionSet;
-  boolean manualMode;
+  int isGripperPlaced = 7;
   int counterLap = 0;
   int redPartCount = 0;
   int transparentPartCount = 0;
@@ -39,8 +38,9 @@
   //main var for listener
   //*****************from FX5U controller*******
   int isAllowedToMove = 4;
-  int typeA = 3;
-  int typeB = 4;
+  int typeA = 5;
+  int typeB = 6;
+  int allowToMove = 4;
   //********************************************
   int x = 0;
   int y = 0;
@@ -61,26 +61,44 @@ void setup() {
   pinMode(typeB, INPUT);
   pinMode(isAllowedToMove, INPUT);
   pinMode(isGripperPlaced, OUTPUT);
-  pinMode(6, OUTPUT);
+  pinMode(typeA, INPUT);
+  pinMode(typeB, INPUT);
+  pinMode(gripInPlace, OUTPUT);
+  pinMode(allowToMove, INPUT);
+  Serial.begin(9600);
 }
 int xg = 0;
+int sts = 0;
+
 void loop() {
+//  digitalWrite(releaseStop, HIGH);
+//  digitalWrite(11, HIGH);
+//moveToGrabbingPos();
+//  moveDown(10000);
+//for(int i = 0; i < 1000; i++){
+//  moveLeftMotor();
+//}
+  firstMove();
   // put your main code here, to run repeatedly:
 //    firstMove();
 //    delay(2000);
 //    secondMove();
-//    checkManualMove();
+//digitalWrite(7, HIGH);
+//delay(3000);
+//digitalWrite(7, LOW);
+//delay(3000);
+    //checkManualMove();
 //    delay(2000);
       //digitalWrite(releaseStop, HIGH);
       
-      if(xg == 0){
-        xg++;
-        moveToGrabbingPos();
-        delay(4000);
-        yMoveToPos(thirdLevelY);
-        delay(7000);
-        getBackToInitial();
-      }
+//      if(xg == 0){
+//        xg++;
+//        moveToGrabbingPos();
+//        delay(4000);
+//        yMoveToPos(thirdLevelY);
+//        delay(7000);
+//        getBackToInitial();
+//      }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -88,24 +106,27 @@ void loop() {
   //waits for permission to move, if gots permission, then moves to grabbing point 
   // then sends command to FX5U that gripper has been placed
   void firstMove(){
-    while(digitalRead(permissionSet) != true){
+    
+    while(digitalRead(allowToMove) != true){
       //do nothing
     }
+    delay(1000);
     digitalWrite(isGripperPlaced, LOW);
-    if(digitalRead(permissionSet) == true){
+    if(digitalRead(allowToMove) == true){
       moveToGrabbingPos();
       delay(1000);
       digitalWrite(isGripperPlaced, HIGH);
+      delay(2000);
     }
   }
   //waits for permission to move, if gots permission, then moves to placing point 
   // then sends command to FX5U that gripper has been placed
   void secondMove(){
-    while(digitalRead(permissionSet) != true){
+    while(digitalRead(allowToMove) != true){
       //do nothing
     }
      digitalWrite(isGripperPlaced, LOW);
-     if(digitalRead(permissionSet) == true){
+     if(digitalRead(allowToMove) == true){
         int colorNumber = checkColor();
         if(colorNumber != 0){
           movePart(colorNumber);
@@ -281,14 +302,10 @@ void loop() {
 
 //move each motor [impulseCount] times  and change global coordinates : x and y
   void moveMotors(int impulseCount){
-    //digitalWrite(releaseStop, HIGH);
       for(int i = 0; i < impulseCount; i++){
-          checkManualMove();
-              if(permissionSet = true){
                   moveLeftMotor();
                   moveRightMotor();
                   changeCoord();
-              }
           }
    }
 
@@ -316,28 +333,7 @@ void loop() {
       }
     }
   }
-  //method check manual move needs in case if you need to stop program and adjust grip to required posotion
-  void checkManualMove(){
-    if(digitalRead(manualMove) == HIGH){        //if button pressed and while pressed stop everything and do nothing
-        while(digitalRead(manualMove) == HIGH){
-            //do nothing
-        }
-        if(digitalRead(releaseStop) == HIGH){    //when button released: if stop has been released, than turn it on
-            digitalWrite(releaseStop, LOW);
-        }
-        else{                                    // else turn it off and wait until it button pressed again
-          digitalWrite(releaseStop, HIGH);
-          while(digitalRead(manualMove) == LOW){
-              //do nothing
-          }
-          while(digitalRead(manualMove) == HIGH){
-              //do nothing
-          }
-          delay(300);          
-      }
-    }
-  }
-   
+  
 //********************************************initial methods**************************
 // change rotating direction to certain motor
 // motorNumber - address for clk+ output
@@ -352,17 +348,21 @@ void loop() {
   }
   //send impulses to right motor  
   void moveLeftMotor(){
-    digitalWrite(clkLeft, HIGH);
-    delayMicroseconds(motorSpeed);
-    digitalWrite(clkLeft, LOW);
-    delayMicroseconds(motorSpeed);
+//    if(digitalRead(allowToMove) != true){
+      digitalWrite(clkLeft, HIGH);
+      delayMicroseconds(motorSpeed);
+      digitalWrite(clkLeft, LOW);
+      delayMicroseconds(motorSpeed);
+//    }
   }
   //send impulses to right motor
   void moveRightMotor(){
-      digitalWrite(clkRight, HIGH);
-      delayMicroseconds(motorSpeed);
-      digitalWrite(clkRight, LOW);
-      delayMicroseconds(motorSpeed);
+//      if(digitalRead(allowToMove)!= true){
+        digitalWrite(clkRight, HIGH);
+        delayMicroseconds(motorSpeed);
+        digitalWrite(clkRight, LOW);
+        delayMicroseconds(motorSpeed);
+//      }
   }
   //***************************************************************************
   
