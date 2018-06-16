@@ -8,6 +8,7 @@
   //*******************constants******************
   boolean grabbingStage;
   boolean movingToSellStage;
+  int gripIn = 3;
   int gripInPlace = 7;
   int manualMove = 2;
   int releaseStop = 8;
@@ -25,7 +26,7 @@
   int firstLevelY = 21700;
   int secondLevelY = 18100;
   int thirdLevelY = 13800; 
-  int fourthLevelY = 10600; 
+  int fourthLevelY = 10400; 
   int fifthLevelY = 6700; 
   int sixthLevelY = 2800; 
   //**********************************************
@@ -61,10 +62,9 @@ void setup() {
   pinMode(typeB, INPUT);
   pinMode(isAllowedToMove, INPUT);
   pinMode(isGripperPlaced, OUTPUT);
-  pinMode(typeA, INPUT);
-  pinMode(typeB, INPUT);
   pinMode(gripInPlace, OUTPUT);
   pinMode(allowToMove, INPUT);
+  pinMode(gripIn, INPUT);
   Serial.begin(9600);
 }
 int xg = 0;
@@ -72,41 +72,20 @@ int sts = 0;
 
 void loop() {
 //  digitalWrite(releaseStop, HIGH);
-//  digitalWrite(11, HIGH);
-//moveToGrabbingPos();
-//  moveDown(10000);
-//for(int i = 0; i < 1000; i++){
-//  moveLeftMotor();
-//}
-  firstMove();
-  // put your main code here, to run repeatedly:
-//    firstMove();
-//    delay(2000);
-//    secondMove();
-//digitalWrite(7, HIGH);
-//delay(3000);
-//digitalWrite(7, LOW);
-//delay(3000);
-    //checkManualMove();
-//    delay(2000);
-      //digitalWrite(releaseStop, HIGH);
-      
-//      if(xg == 0){
-//        xg++;
-//        moveToGrabbingPos();
-//        delay(4000);
-//        yMoveToPos(thirdLevelY);
-//        delay(7000);
-//        getBackToInitial();
-//      }
+  mainMove();
 }
-
+  void mainMove(){
+     firstMove();
+   delay(3000);
+   secondMove();
+   delay(5000);
+  }
 ///////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
   //waits for permission to move, if gots permission, then moves to grabbing point 
   // then sends command to FX5U that gripper has been placed
   void firstMove(){
-    
+    digitalWrite(isGripperPlaced, LOW);
     while(digitalRead(allowToMove) != true){
       //do nothing
     }
@@ -116,12 +95,14 @@ void loop() {
       moveToGrabbingPos();
       delay(1000);
       digitalWrite(isGripperPlaced, HIGH);
-      delay(2000);
+      delay(2300);
+      digitalWrite(isGripperPlaced, LOW);
     }
   }
   //waits for permission to move, if gots permission, then moves to placing point 
   // then sends command to FX5U that gripper has been placed
   void secondMove(){
+    digitalWrite(isGripperPlaced, LOW);
     while(digitalRead(allowToMove) != true){
       //do nothing
     }
@@ -133,7 +114,8 @@ void loop() {
           digitalWrite(isGripperPlaced, HIGH);
         }
      }
-     
+     delay(1000);
+     digitalWrite(isGripperPlaced, LOW);
   }
 //////////////////////////////////////////////////////////////////////   
 /////////////////////////////////////////////////////////////////////
@@ -141,7 +123,7 @@ void loop() {
  void movePart(int color){
     int delta;
     setLevelsandPartCount(color); 
-    if(partCount > 16){
+    if(partCount < 16){
       if(partCount <= maxPartsOnLevel){
         yMoveToPos(lowerLevel);
       } 
@@ -179,13 +161,13 @@ void loop() {
     }
     else{
       if(digitalRead(typeB) == HIGH){
-          metalPartCount++;
-        colorNumber = 3;  
-          return colorNumber;    //3* - means metal part and cell depends on * digit 
+          return 0;
         }
       else{
           //sort next
-          return 0;
+            metalPartCount++;
+            colorNumber = 3;  
+            return colorNumber;    //3* - means metal part and cell depends on * digit 
         }
     }
   }
@@ -222,6 +204,7 @@ void loop() {
   }
 // move grabber to absolute position by x coordinates
   void xMoveToPos(int pos){
+    digitalWrite(isGripperPlaced, LOW);
     int moveX;
     if(pos > x){
       moveX = pos - x;
@@ -235,6 +218,7 @@ void loop() {
   
 // move grabber to absolute position by y coordinates
    void yMoveToPos(int pos){
+    digitalWrite(isGripperPlaced, LOW);
     int moveY;
     if(pos > y){
       moveY = pos - y;
@@ -348,21 +332,21 @@ void loop() {
   }
   //send impulses to right motor  
   void moveLeftMotor(){
-//    if(digitalRead(allowToMove) != true){
+    if(digitalRead(allowToMove) == true && digitalRead(gripIn) == true){
       digitalWrite(clkLeft, HIGH);
       delayMicroseconds(motorSpeed);
       digitalWrite(clkLeft, LOW);
       delayMicroseconds(motorSpeed);
-//    }
+    }
   }
   //send impulses to right motor
   void moveRightMotor(){
-//      if(digitalRead(allowToMove)!= true){
+      if(digitalRead(allowToMove)== true && digitalRead(gripIn) == true){
         digitalWrite(clkRight, HIGH);
         delayMicroseconds(motorSpeed);
         digitalWrite(clkRight, LOW);
         delayMicroseconds(motorSpeed);
-//      }
+      }
   }
   //***************************************************************************
   
