@@ -9,7 +9,6 @@
   boolean grabbingStage;
   boolean movingToSellStage;
   int gripIn = 3;
-  int gripInPlace = 7;
   int manualMove = 2;
   int releaseStop = 8;
   int clkLeft = 9;
@@ -23,15 +22,14 @@
   int grabbingPartYCoord = 24780;
   int xFirstCellPos = 600;
   int xDelta = 2275;
-  int firstLevelY = 21700;
-  int secondLevelY = 18100;
-  int thirdLevelY = 13800; 
-  int fourthLevelY = 10400; 
-  int fifthLevelY = 6700; 
-  int sixthLevelY = 2800; 
+  int firstLevelY = 20500;
+  int secondLevelY = 16600;
+  int thirdLevelY = 12800; 
+  int fourthLevelY = 9200; 
+  int fifthLevelY = 5500; 
+  int sixthLevelY = 1800; 
   //**********************************************
   int isGripperPlaced = 7;
-  int counterLap = 0;
   int redPartCount = 0;
   int transparentPartCount = 0;
   int metalPartCount = 0;
@@ -60,9 +58,7 @@ void setup() {
   pinMode(manualMove, INPUT);
   pinMode(typeA, INPUT);
   pinMode(typeB, INPUT);
-  pinMode(isAllowedToMove, INPUT);
   pinMode(isGripperPlaced, OUTPUT);
-  pinMode(gripInPlace, OUTPUT);
   pinMode(allowToMove, INPUT);
   pinMode(gripIn, INPUT);
   Serial.begin(9600);
@@ -76,9 +72,9 @@ void loop() {
 }
   void mainMove(){
      firstMove();
-   delay(3000);
+   delay(2000);
    secondMove();
-   delay(5000);
+   delay(2500);
   }
 ///////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
@@ -123,7 +119,12 @@ void loop() {
  void movePart(int color){
     int delta;
     setLevelsandPartCount(color); 
-    if(partCount < 16){
+    if(partCount > 16){
+      while(true){
+            //do nothing            
+          }
+    }
+    if(partCount < 17){
       if(partCount <= maxPartsOnLevel){
         yMoveToPos(lowerLevel);
       } 
@@ -330,7 +331,7 @@ void loop() {
       digitalWrite(motorNumber, LOW);
     }    
   }
-  //send impulses to right motor  
+  //send impulse to right motor  
   void moveLeftMotor(){
     if(digitalRead(allowToMove) == true && digitalRead(gripIn) == true){
       digitalWrite(clkLeft, HIGH);
@@ -339,7 +340,7 @@ void loop() {
       delayMicroseconds(motorSpeed);
     }
   }
-  //send impulses to right motor
+  //send impulse to right motor
   void moveRightMotor(){
       if(digitalRead(allowToMove)== true && digitalRead(gripIn) == true){
         digitalWrite(clkRight, HIGH);
