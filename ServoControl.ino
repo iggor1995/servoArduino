@@ -1,4 +1,4 @@
-  //Any coordinats used in this program presented as impulses for step motors provided by servo driver.
+ //Any coordinats used in this program presented as impulses for step motors provided by servo driver.
   //Each motor (left and right) controlled by servodriver
   //Arduino controller sends signal to both servo drivers
   //leftmove = left(true) + right(true)
@@ -38,13 +38,13 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
   
   boolean grabbingStage;
   boolean movingToSellStage;
-  int gripIn = 3;
+  int gripIn = 0;
   int manualMove = 2;
-  int releaseStop = 8;
-  int clkLeft = 9;
-  int clkRight = 10; 
-  int cwLeftMotor = 11;
-  int cwRightMotor = 12;
+  int releaseStop = 5;
+  int clkLeft = 6;
+  int clkRight = 7; 
+  int cwLeftMotor = 8;
+  int cwRightMotor = 9;
   int maxPartsOnLevel = 8;
   int maxPartsInRow = 4;
   int motorSpeed = 50;
@@ -59,17 +59,17 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
   int fifthLevelY = 5500; 
   int sixthLevelY = 1800; 
   //**********************************************
-  int isGripperPlaced = 7;
+  int isGripperPlaced = 4;
   int redPartCount = 0;
   int transparentPartCount = 0;
   int metalPartCount = 0;
   int colorNumber = 0; // 10 - red | 20 - transparent | metal - 30
   //main var for listener
   //*****************from FX5U controller*******
-  int isAllowedToMove = 4;
-  int typeA = 5;
-  int typeB = 6;
-  int allowToMove = 4;
+  int isAllowedToMove = 1;
+  int typeA = 2;
+  int typeB = 3;
+  int allowToMove = 1;
   //********************************************
   int x = 0;
   int y = 0;
@@ -91,7 +91,7 @@ void setup() {
   pinMode(isGripperPlaced, OUTPUT);
   pinMode(allowToMove, INPUT);
   pinMode(gripIn, INPUT);
-  Serial.begin(9600);
+//  Serial.begin(9600);
   uint8_t mac[] = { 0x00, 0xAA, 0xBB, 0xCC, 0xDE, 0x02 };
   uint8_t ip[] = { 192, 168, 1, 100 };
   uint8_t gateway[] = { 192, 168, 0, 4 };
@@ -116,7 +116,6 @@ void loop() {
   
   
   boolean checkIfManual(){
-    Serial.println("check");
       if(Mb.C[21] == true){   //if manual mode
         manualMode();
       }
@@ -125,12 +124,17 @@ void loop() {
   void manualMode(){
     while(Mb.C[21] == 1){
       Mb.Run();
-      Serial.println("manual");
+      if(Mb.C[26] == 1){
+         digitalWrite(releaseStop, HIGH);
+         while(Mb.C[26] == 1){
+          Mb.Run();
+         }
+      }
       if(Mb.C[22] == 1){
         digitalWrite(releaseStop, HIGH);
         while(Mb.C[22] == 1){ // moveUp
+          moveUpManual(1);
           Mb.Run();
-          moveUpManual(10);
         }
         digitalWrite(releaseStop, LOW);
       }
@@ -163,32 +167,33 @@ void loop() {
   //**************************************************
   // change direction to down and move
 // xRel = relative coordinate changes
-//  void moveLeftManual(int xRel){
-//    changeDir(true, cwLeftMotor);
-//    changeDir(true, cwRightMotor);
-//    moveMotors(xRel);
-//  }
-//// change direction to left and move
-//// xRel = relative coordinate changes  
-//  void moveRightManual(int xRel){
-//    changeDir(false, cwLeftMotor);
-//    changeDir(false, cwRightMotor);
-//    moveMotors(xRel);
-//  }
-//// change direction to upward and move
-//// xRel = relative coordinate changes
-//  void moveUpManual(int xRel){
-//    changeDir(false, cwLeftMotor);
-//    changeDir(true, cwRightMotor);
-//    moveMotors(xRel);
-//  }
-//// change direction to downward and move
-//// xRel = relative coordinate changes
-//  void moveDownManual(int xRel){
-//    changeDir(true, cwLeftMotor);
-//    changeDir(false, cwRightMotor);
-//    moveMotors(xRel);
-//  }
+  void moveLeftManual(int xRel){
+    changeDir(true, cwLeftMotor);
+    changeDir(true, cwRightMotor);
+    moveMotors(xRel);
+  }
+// change direction to left and move
+// xRel = relative coordinate changes  
+  void moveRightManual(int xRel){
+    changeDir(false, cwLeftMotor);
+    changeDir(false, cwRightMotor);
+    moveMotors(xRel);
+  }
+// change direction to upward and move
+// xRel = relative coordinate changes
+  void moveUpManual(int xRel){
+    changeDir(false, cwLeftMotor);
+    changeDir(true, cwRightMotor);
+//     moveUp(1000);
+    moveMotors(xRel);
+  }
+// change direction to downward and move
+// xRel = relative coordinate changes
+  void moveDownManual(int xRel){
+    changeDir(true, cwLeftMotor);
+    changeDir(false, cwRightMotor);
+    moveMotors(xRel);
+  }
 //****************************************************************************************************
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -199,14 +204,14 @@ void loop() {
     digitalWrite(isGripperPlaced, LOW);
     while(digitalRead(allowToMove) != true){
           Mb.Run();
-          delay(1000);
-          Serial.println("firstMove cycle");
           checkIfManual();
     }
+    Serial.println("firstMove out of cycle");
     delay(1000);
     digitalWrite(isGripperPlaced, LOW);
     if(digitalRead(allowToMove) == true){
       moveToGrabbingPos();
+      Serial.println("fallow to move");
       delay(1000);
       digitalWrite(isGripperPlaced, HIGH);
       delay(2300);
@@ -217,6 +222,8 @@ void loop() {
   //waits for permission to move, if gots permission, then moves to placing point 
   // then sends command to FX5U that gripper has been placed
   void secondMove(){
+          Serial.println("secind move");
+
     digitalWrite(isGripperPlaced, LOW);
     while(digitalRead(allowToMove) != true){
       //do nothing
@@ -417,6 +424,7 @@ void loop() {
 // changes x and y on one depending on rotation direction  
 // x and y are absolute coordinates
   void changeCoord(){
+    Mb.Run();
     if(digitalRead(cwLeftMotor) == true){
       if(digitalRead(cwRightMotor) == true){  //left(true) right(true) Left Move
         if(x > 0){
@@ -443,7 +451,7 @@ void loop() {
 // change rotating direction to certain motor
 // motorNumber - address for clk+ output
   void changeDir(boolean isCwPlus, int motorNumber){
-    
+    Mb.Run();
     if(isCwPlus == true){
      digitalWrite(motorNumber, HIGH);
     }
@@ -453,24 +461,22 @@ void loop() {
   }
   //send impulse to right motor  
   void moveLeftMotor(){
-    if(digitalRead(allowToMove) == true && digitalRead(gripIn) == true){
+//    if(digitalRead(allowToMove) == true && digitalRead(gripIn) == true){
+      Mb.Run();
       digitalWrite(clkLeft, HIGH);
       delayMicroseconds(motorSpeed);
       digitalWrite(clkLeft, LOW);
       delayMicroseconds(motorSpeed);
-    }
+//    }
   }
   //send impulse to right motor
   void moveRightMotor(){
-      if(digitalRead(allowToMove)== true && digitalRead(gripIn) == true){
+//      if(digitalRead(allowToMove)== true && digitalRead(gripIn) == true){
+        Mb.Run();
         digitalWrite(clkRight, HIGH);
         delayMicroseconds(motorSpeed);
         digitalWrite(clkRight, LOW);
         delayMicroseconds(motorSpeed);
-      }
+//      }
   }
   //***************************************************************************
-  
-    
-
-  
