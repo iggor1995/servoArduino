@@ -6,6 +6,36 @@
   //upMove = left(false) + right(true)
   //downMove = left(true) + right(false)
   //*******************constants******************
+ #include <SPI.h>
+#include <Ethernet.h>
+#include "Mudbus.h"
+
+Mudbus Mb;
+//Function codes 1(read coils), 3(read registers), 5(write coil), 6(write register)
+//signed int Mb.R[0 to 125] and bool Mb.C[0 to 128] MB_N_R MB_N_C
+//Port 502 (defined in Mudbus.h) MB_PORT
+
+#include <Keypad.h>
+
+const byte ROWS = 4;
+const byte COLS = 3;
+char keys[ROWS][COLS] = {
+{'1','2','3'},
+{'4','5','6'},
+{'7','8','9'},
+{'*','0','#'}
+};
+byte rowPins[ROWS] = {28, 27, 26, 25};
+byte colPins[COLS] = {24, 23, 22};
+Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+
+  
+  
+  
+  
+  
+  
+  
   boolean grabbingStage;
   boolean movingToSellStage;
   int gripIn = 3;
@@ -62,6 +92,13 @@ void setup() {
   pinMode(allowToMove, INPUT);
   pinMode(gripIn, INPUT);
   Serial.begin(9600);
+  uint8_t mac[] = { 0x00, 0xAA, 0xBB, 0xCC, 0xDE, 0x02 };
+  uint8_t ip[] = { 192, 168, 1, 100 };
+  uint8_t gateway[] = { 192, 168, 0, 4 };
+  uint8_t subnet[] = { 255, 255, 255, 0 };
+  Ethernet.begin(mac, ip, gateway, subnet);
+  //Avoid pins 4,10,11,12,13 when using ethernet shield
+  delay(5000);
 }
 int xg = 0;
 int sts = 0;
@@ -76,6 +113,84 @@ void loop() {
    secondMove();
    delay(2500);
   }
+  
+  
+  boolean checkIfManual(){
+    Serial.println("check");
+      if(Mb.C[21] == true){   //if manual mode
+        manualMode();
+      }
+  }
+
+  void manualMode(){
+    while(Mb.C[21] == 1){
+      Mb.Run();
+      Serial.println("manual");
+      if(Mb.C[22] == 1){
+        digitalWrite(releaseStop, HIGH);
+        while(Mb.C[22] == 1){ // moveUp
+          Mb.Run();
+          moveUpManual(10);
+        }
+        digitalWrite(releaseStop, LOW);
+      }
+      if(Mb.C[23] == 1){
+        digitalWrite(releaseStop, HIGH);
+        while(Mb.C[23] == 1){ // moveDown
+          Mb.Run();
+          moveDownManual(10);
+        }
+        digitalWrite(releaseStop, LOW);
+      }
+      if(Mb.C[24] == 1){
+        digitalWrite(releaseStop, HIGH);
+        while(Mb.C[24] == 1){ // moveLeft
+          Mb.Run();
+          moveLeftManual(10);
+        }
+        digitalWrite(releaseStop, LOW);
+      }
+      if(Mb.C[25] == 1){
+        digitalWrite(releaseStop, HIGH);
+        while(Mb.C[25] == 1){ // moveRight
+          Mb.Run();
+          moveRightManual(10);
+        }
+      }
+      digitalWrite(releaseStop, LOW);
+    }
+  }
+  //**************************************************
+  // change direction to down and move
+// xRel = relative coordinate changes
+//  void moveLeftManual(int xRel){
+//    changeDir(true, cwLeftMotor);
+//    changeDir(true, cwRightMotor);
+//    moveMotors(xRel);
+//  }
+//// change direction to left and move
+//// xRel = relative coordinate changes  
+//  void moveRightManual(int xRel){
+//    changeDir(false, cwLeftMotor);
+//    changeDir(false, cwRightMotor);
+//    moveMotors(xRel);
+//  }
+//// change direction to upward and move
+//// xRel = relative coordinate changes
+//  void moveUpManual(int xRel){
+//    changeDir(false, cwLeftMotor);
+//    changeDir(true, cwRightMotor);
+//    moveMotors(xRel);
+//  }
+//// change direction to downward and move
+//// xRel = relative coordinate changes
+//  void moveDownManual(int xRel){
+//    changeDir(true, cwLeftMotor);
+//    changeDir(false, cwRightMotor);
+//    moveMotors(xRel);
+//  }
+//****************************************************************************************************
+
 ///////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
   //waits for permission to move, if gots permission, then moves to grabbing point 
@@ -83,7 +198,10 @@ void loop() {
   void firstMove(){
     digitalWrite(isGripperPlaced, LOW);
     while(digitalRead(allowToMove) != true){
-      //do nothing
+          Mb.Run();
+          delay(1000);
+          Serial.println("firstMove cycle");
+          checkIfManual();
     }
     delay(1000);
     digitalWrite(isGripperPlaced, LOW);
@@ -95,6 +213,7 @@ void loop() {
       digitalWrite(isGripperPlaced, LOW);
     }
   }
+  
   //waits for permission to move, if gots permission, then moves to placing point 
   // then sends command to FX5U that gripper has been placed
   void secondMove(){
@@ -247,6 +366,7 @@ void loop() {
     digitalWrite(releaseStop, LOW);
     delay(100);
   }
+  //**************************************************
 // change direction to left and move
 // xRel = relative coordinate changes  
   void moveRight(int xRel){
