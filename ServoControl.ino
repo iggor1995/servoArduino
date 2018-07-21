@@ -32,7 +32,8 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
   
   
   
-  
+  int pointX = 0;
+  int pointY = 0;
   
   
   
@@ -47,7 +48,7 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
   int cwRightMotor = 9;
   int maxPartsOnLevel = 8;
   int maxPartsInRow = 4;
-  int motorSpeed = 50;
+  int motorSpeed = 30;
   int grabbingPartXCoord = 1400;
   int grabbingPartYCoord = 24780;
   int xFirstCellPos = 600;
@@ -106,12 +107,14 @@ int sts = 0;
 void loop() {
 //  digitalWrite(releaseStop, HIGH);
   mainMove();
+//Mb.Run();
 }
   void mainMove(){
      firstMove();
+     Mb.Run();
    delay(2000);
    secondMove();
-   delay(2500);
+   Mb.Run();
   }
   
   
@@ -133,7 +136,9 @@ void loop() {
       if(Mb.C[22] == 1){
         digitalWrite(releaseStop, HIGH);
         while(Mb.C[22] == 1){ // moveUp
-          moveUpManual(1);
+          moveUpManual(10);
+          Mb.R[29] = x;
+          Mb.R[30] = y; 
           Mb.Run();
         }
         digitalWrite(releaseStop, LOW);
@@ -141,24 +146,30 @@ void loop() {
       if(Mb.C[23] == 1){
         digitalWrite(releaseStop, HIGH);
         while(Mb.C[23] == 1){ // moveDown
-          Mb.Run();
           moveDownManual(10);
+           Mb.R[29] = x;
+           Mb.R[30] = y; 
+           Mb.Run();
         }
         digitalWrite(releaseStop, LOW);
       }
       if(Mb.C[24] == 1){
         digitalWrite(releaseStop, HIGH);
         while(Mb.C[24] == 1){ // moveLeft
-          Mb.Run();
           moveLeftManual(10);
+           Mb.R[29] = x;
+           Mb.R[30] = y; 
+           Mb.Run();
         }
         digitalWrite(releaseStop, LOW);
       }
       if(Mb.C[25] == 1){
         digitalWrite(releaseStop, HIGH);
         while(Mb.C[25] == 1){ // moveRight
-          Mb.Run();
           moveRightManual(10);
+           Mb.R[29] = x;
+           Mb.R[30] = y; 
+           Mb.Run();
         }
       }
       digitalWrite(releaseStop, LOW);
@@ -184,7 +195,6 @@ void loop() {
   void moveUpManual(int xRel){
     changeDir(false, cwLeftMotor);
     changeDir(true, cwRightMotor);
-//     moveUp(1000);
     moveMotors(xRel);
   }
 // change direction to downward and move
@@ -201,6 +211,7 @@ void loop() {
   //waits for permission to move, if gots permission, then moves to grabbing point 
   // then sends command to FX5U that gripper has been placed
   void firstMove(){
+    Mb.Run();
     digitalWrite(isGripperPlaced, LOW);
     while(digitalRead(allowToMove) != true){
           Mb.Run();
@@ -211,23 +222,33 @@ void loop() {
     digitalWrite(isGripperPlaced, LOW);
     if(digitalRead(allowToMove) == true){
       moveToGrabbingPos();
-      Serial.println("fallow to move");
+      int colorNumber = checkColor();
+        if(colorNumber != 0){
+          sendCoordForSecondMove(colorNumber);
+        }
       delay(1000);
       digitalWrite(isGripperPlaced, HIGH);
       delay(2300);
       digitalWrite(isGripperPlaced, LOW);
     }
+     
+  }
+
+  void setPointCoord(int x, int y){
+          pointX = x;
+          pointY = y;
   }
   
   //waits for permission to move, if gots permission, then moves to placing point 
   // then sends command to FX5U that gripper has been placed
   void secondMove(){
-          Serial.println("secind move");
-
+    Mb.Run();
     digitalWrite(isGripperPlaced, LOW);
     while(digitalRead(allowToMove) != true){
-      //do nothing
+      Mb.Run();
+      checkIfManual();
     }
+    Mb.Run();
      digitalWrite(isGripperPlaced, LOW);
      if(digitalRead(allowToMove) == true){
         int colorNumber = checkColor();
@@ -236,6 +257,7 @@ void loop() {
           digitalWrite(isGripperPlaced, HIGH);
         }
      }
+     Mb.Run();
      delay(1000);
      digitalWrite(isGripperPlaced, LOW);
   }
@@ -244,33 +266,82 @@ void loop() {
 //moves certain part to certain position
  void movePart(int color){
     int delta;
+    for(int i = 0; i < 100; i++){
+      Mb.Run();
+    }
     setLevelsandPartCount(color); 
+    Mb.Run();
     if(partCount > 16){
       while(true){
-            //do nothing            
+            Mb.Run();  
+            checkIfManual();          
           }
     }
     if(partCount < 17){
       if(partCount <= maxPartsOnLevel){
+        Mb.Run();
+        setPointCoord(x, lowerLevel);
+        Mb.R[27] = pointY;
+        Mb.Run();
         yMoveToPos(lowerLevel);
       } 
       else{
         yMoveToPos(higherLevel);
+        Mb.Run();
+        setPointCoord(x, lowerLevel);
+        Mb.R[27] = pointY;
+        Mb.Run();
         partCount = partCount - maxPartsOnLevel;
       }
       xMoveToPos(xFirstCellPos); // move to first sell int row
+      Mb.Run();
+      setPointCoord(xFirstCellPos, y);
+        Mb.R[26] = pointX;
+        Mb.Run();
       if(partCount <= maxPartsInRow){
         delta = xDelta * (partCount - 1);
       }
       else{
         delta = xDelta * (partCount - maxPartsInRow - 1);
       }
+      Mb.Run();
+      setPointCoord(delta, y);
+        Mb.R[26] = pointX;
+        Mb.Run();
       moveRight(delta);
     }
   }
-  
+  //moves certain part to certain position
+ void sendCoordForSecondMove(int color){
+    int delta;
+    setLevelsandPartCount(color); 
+    Mb.Run();
+    if(partCount > 16){
+      while(true){
+            Mb.Run();  
+            checkIfManual();          
+          }
+    }
+    if(partCount < 17){
+      if(partCount <= maxPartsOnLevel){
+        Mb.Run();
+        setPointCoord(x, lowerLevel);
+        Mb.R[27] = pointY;
+        Mb.Run();
+        } 
+      else{
+        Mb.Run();
+        setPointCoord(x, lowerLevel);
+        Mb.R[27] = pointY;
+        Mb.Run();
+        partCount = partCount - maxPartsOnLevel;
+      }
+      Mb.Run();
+    }
+  }
    //checks color or type of the part and set level1 and level2
   int checkColor(){
+    Mb.Run();
     if(digitalRead(typeA) == HIGH){
       if(digitalRead(typeB) == HIGH){
         // sort next 
@@ -302,6 +373,7 @@ void loop() {
   //method sets global level coordinates and global variable partCount
   //color - number of color : 1 - red; 2 - transparent; 3 - metal;
   void setLevelsandPartCount(int color){
+    Mb.Run();
     if(color == 1){    //RED COLOR
         lowerLevel = firstLevelY;
         higherLevel = secondLevelY;
@@ -321,6 +393,12 @@ void loop() {
   
 // moves grabber to grabbing pos, where part has been set
   void moveToGrabbingPos(){
+    setPointCoord(grabbingPartXCoord, grabbingPartYCoord);
+    Mb.C[28] = 1;
+    Mb.Run();
+    Mb.R[26] = pointX;
+    Mb.R[27] = pointY;
+    Mb.Run();
     xMoveToPos(grabbingPartXCoord);
     yMoveToPos(grabbingPartYCoord);
   }
@@ -451,7 +529,7 @@ void loop() {
 // change rotating direction to certain motor
 // motorNumber - address for clk+ output
   void changeDir(boolean isCwPlus, int motorNumber){
-    Mb.Run();
+//    Mb.Run();
     if(isCwPlus == true){
      digitalWrite(motorNumber, HIGH);
     }
@@ -461,22 +539,16 @@ void loop() {
   }
   //send impulse to right motor  
   void moveLeftMotor(){
-//    if(digitalRead(allowToMove) == true && digitalRead(gripIn) == true){
-      Mb.Run();
       digitalWrite(clkLeft, HIGH);
       delayMicroseconds(motorSpeed);
       digitalWrite(clkLeft, LOW);
       delayMicroseconds(motorSpeed);
-//    }
   }
   //send impulse to right motor
   void moveRightMotor(){
-//      if(digitalRead(allowToMove)== true && digitalRead(gripIn) == true){
-        Mb.Run();
         digitalWrite(clkRight, HIGH);
         delayMicroseconds(motorSpeed);
         digitalWrite(clkRight, LOW);
         delayMicroseconds(motorSpeed);
-//      }
   }
   //***************************************************************************
