@@ -1,4 +1,4 @@
- //Any coordinats used in this program presented as impulses for step motors provided by servo driver.
+//Any coordinats used in this program presented as impulses for step motors provided by servo driver.
   //Each motor (left and right) controlled by servodriver
   //Arduino controller sends signal to both servo drivers
   //leftmove = left(true) + right(true)
@@ -15,7 +15,7 @@ Mudbus Mb;
 //signed int Mb.R[0 to 125] and bool Mb.C[0 to 128] MB_N_R MB_N_C
 //Port 502 (defined in Mudbus.h) MB_PORT
 
-#include <Keypad.h>
+
 
 const byte ROWS = 4;
 const byte COLS = 3;
@@ -27,11 +27,8 @@ char keys[ROWS][COLS] = {
 };
 byte rowPins[ROWS] = {28, 27, 26, 25};
 byte colPins[COLS] = {24, 23, 22};
-Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
-  
-  
-  
+
   int pointX = 0;
   int pointY = 0;
   
@@ -222,11 +219,11 @@ void loop() {
     digitalWrite(isGripperPlaced, LOW);
     if(digitalRead(allowToMove) == true){
       moveToGrabbingPos();
-      int colorNumber = checkColor();
+      int colorNumber = checkColor(true);
         if(colorNumber != 0){
           sendCoordForSecondMove(colorNumber);
         }
-      delay(1000);
+//      delay(1000);
       digitalWrite(isGripperPlaced, HIGH);
       delay(2300);
       digitalWrite(isGripperPlaced, LOW);
@@ -251,7 +248,7 @@ void loop() {
     Mb.Run();
      digitalWrite(isGripperPlaced, LOW);
      if(digitalRead(allowToMove) == true){
-        int colorNumber = checkColor();
+        int colorNumber = checkColor(false);
         if(colorNumber != 0){
           movePart(colorNumber);
           digitalWrite(isGripperPlaced, HIGH);
@@ -340,19 +337,23 @@ void loop() {
     }
   }
    //checks color or type of the part and set level1 and level2
-  int checkColor(){
+  int checkColor(boolean inform){
     Mb.Run();
     if(digitalRead(typeA) == HIGH){
       if(digitalRead(typeB) == HIGH){
         // sort next 
         // certain part count
-        redPartCount++;
+        if(inform){
+          redPartCount++;
+        }
         colorNumber = 1;
         return colorNumber;      //1* - means red part and cell depends on *      
       }
       else{
           //sort next
-          transparentPartCount++;
+          if(inform){
+            transparentPartCount++;
+          }
           colorNumber = 2;
           return colorNumber;  //2* - means transparent part and cell depends on *
         }
@@ -363,7 +364,9 @@ void loop() {
         }
       else{
           //sort next
-            metalPartCount++;
+            if(inform){
+              metalPartCount++;
+            }  
             colorNumber = 3;  
             return colorNumber;    //3* - means metal part and cell depends on * digit 
         }
@@ -551,4 +554,4 @@ void loop() {
         digitalWrite(clkRight, LOW);
         delayMicroseconds(motorSpeed);
   }
-  //***************************************************************************
+//***************************************************************************
