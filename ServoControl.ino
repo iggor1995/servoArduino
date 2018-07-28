@@ -172,6 +172,18 @@ void loop() {
       digitalWrite(releaseStop, LOW);
     }
   }
+  
+  //**************************************************
+  void sendData(){
+        Mb.Run();
+        Mb.R[31] = redPartCount;
+        Mb.R[32] = transparentPartCount;
+        Mb.R[33] = metalPartCount;
+        Mb.R[34] = colorNumber;
+        Mb.Run();
+  }
+  
+  //**************************************************
   //**************************************************
   // change direction to down and move
 // xRel = relative coordinate changes
@@ -209,10 +221,12 @@ void loop() {
   // then sends command to FX5U that gripper has been placed
   void firstMove(){
     Mb.Run();
+    sendData();
     digitalWrite(isGripperPlaced, LOW);
     while(digitalRead(allowToMove) != true){
           Mb.Run();
           checkIfManual();
+          sendData();
     }
     Serial.println("firstMove out of cycle");
     delay(1000);
@@ -240,10 +254,12 @@ void loop() {
   // then sends command to FX5U that gripper has been placed
   void secondMove(){
     Mb.Run();
+    sendData();
     digitalWrite(isGripperPlaced, LOW);
     while(digitalRead(allowToMove) != true){
       Mb.Run();
       checkIfManual();
+      sendData();
     }
     Mb.Run();
      digitalWrite(isGripperPlaced, LOW);
@@ -265,13 +281,15 @@ void loop() {
     int delta;
     for(int i = 0; i < 100; i++){
       Mb.Run();
+      sendData();
     }
     setLevelsandPartCount(color); 
     Mb.Run();
     if(partCount > 16){
       while(true){
             Mb.Run();  
-            checkIfManual();          
+            checkIfManual();  
+            sendData();        
           }
     }
     if(partCount < 17){
@@ -281,6 +299,7 @@ void loop() {
         Mb.R[27] = pointY;
         Mb.Run();
         yMoveToPos(lowerLevel);
+        sendData();
       } 
       else{
         yMoveToPos(higherLevel);
@@ -289,12 +308,14 @@ void loop() {
         Mb.R[27] = pointY;
         Mb.Run();
         partCount = partCount - maxPartsOnLevel;
+        sendData();
       }
       xMoveToPos(xFirstCellPos); // move to first sell int row
       Mb.Run();
       setPointCoord(xFirstCellPos, y);
         Mb.R[26] = pointX;
         Mb.Run();
+        sendData();
       if(partCount <= maxPartsInRow){
         delta = xDelta * (partCount - 1);
       }
@@ -305,6 +326,7 @@ void loop() {
       setPointCoord(delta, y);
         Mb.R[26] = pointX;
         Mb.Run();
+        sendData();
       moveRight(delta);
     }
   }
@@ -316,7 +338,8 @@ void loop() {
     if(partCount > 16){
       while(true){
             Mb.Run();  
-            checkIfManual();          
+            checkIfManual();   
+            sendData();       
           }
     }
     if(partCount < 17){
@@ -325,13 +348,15 @@ void loop() {
         setPointCoord(x, lowerLevel);
         Mb.R[27] = pointY;
         Mb.Run();
-        } 
+        sendData();
+      } 
       else{
         Mb.Run();
         setPointCoord(x, lowerLevel);
         Mb.R[27] = pointY;
         Mb.Run();
         partCount = partCount - maxPartsOnLevel;
+        sendData();
       }
       Mb.Run();
     }
