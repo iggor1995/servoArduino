@@ -6,34 +6,31 @@
   //upMove = left(false) + right(true)
   //downMove = left(true) + right(false)
   //*******************constants******************
- #include <SPI.h>
-#include <Ethernet.h>
-#include "Mudbus.h"
+  //****************************IMPORTANT!!!!!!!!!********************
+  //WHEN UPLOADING detach wires from 0 and 1 pins!!!!!!!!!!!!!!!!!!!!!
+  //WHEN UPLOADING detach wires from 0 and 1 pins!!!!!!!!!!!!!!!!!!!!!
+  //****************************IMPORTANT!!!!!!!!!********************
+  #include <SPI.h>
+  #include <Ethernet.h>
+  #include "Mudbus.h"
 
-Mudbus Mb;
+  Mudbus Mb;
 //Function codes 1(read coils), 3(read registers), 5(write coil), 6(write register)
 //signed int Mb.R[0 to 125] and bool Mb.C[0 to 128] MB_N_R MB_N_C
 //Port 502 (defined in Mudbus.h) MB_PORT
 
-
-
-const byte ROWS = 4;
-const byte COLS = 3;
-char keys[ROWS][COLS] = {
-{'1','2','3'},
-{'4','5','6'},
-{'7','8','9'},
-{'*','0','#'}
-};
-byte rowPins[ROWS] = {28, 27, 26, 25};
-byte colPins[COLS] = {24, 23, 22};
-
-
+  const byte ROWS = 4;
+  const byte COLS = 3;
+  char keys[ROWS][COLS] = {
+  {'1','2','3'},
+  {'4','5','6'},
+  {'7','8','9'},
+  {'*','0','#'}
+  };
+  byte rowPins[ROWS] = {28, 27, 26, 25};
+  byte colPins[COLS] = {24, 23, 22};
   int pointX = 0;
   int pointY = 0;
-  
-  
-  
   boolean grabbingStage;
   boolean movingToSellStage;
   int gripIn = 0;
@@ -75,7 +72,8 @@ byte colPins[COLS] = {24, 23, 22};
   int lowerLevel;
   int higherLevel;
   int partCount;
-  //*****************************************************************************************************
+//******************************************************
+//**********************START_SETUP*********************  
 void setup() {
   // put your setup code here, to run once:
   pinMode(clkLeft, OUTPUT);
@@ -89,7 +87,7 @@ void setup() {
   pinMode(isGripperPlaced, OUTPUT);
   pinMode(allowToMove, INPUT);
   pinMode(gripIn, INPUT);
-//  Serial.begin(9600);
+//*********************Ethernet connection**************
   uint8_t mac[] = { 0x00, 0xAA, 0xBB, 0xCC, 0xDE, 0x02 };
   uint8_t ip[] = { 192, 168, 1, 100 };
   uint8_t gateway[] = { 192, 168, 0, 4 };
@@ -98,29 +96,39 @@ void setup() {
   //Avoid pins 4,10,11,12,13 when using ethernet shield
   delay(5000);
 }
-int xg = 0;
-int sts = 0;
+//**********************END_SETUP***********************
 
-void loop() {
-//  digitalWrite(releaseStop, HIGH);
-  mainMove();
-//Mb.Run();
-}
-  void mainMove(){
-     firstMove();
-     Mb.Run();
-   delay(2000);
-   secondMove();
-   Mb.Run();
+  void loop() {
+    mainMove();
   }
   
-  
+  void mainMove(){
+    firstMove();
+    Mb.Run();
+    delay(2000);
+    
+    secondMove();
+    Mb.Run();
+  }
+  /*
+   * Method checks if MANUAL MODE has been activated from SCADA
+   * Mb.C[21] - manual mode signal
+   */
   boolean checkIfManual(){
       if(Mb.C[21] == true){   //if manual mode
         manualMode();
       }
   }
 
+//*******************MANUAL_MODE*******************************
+/*
+ * During manual mode it's possible to move grabber
+ * 21 - if manual mode is active
+ * 26 - release stop using SCADA
+ * 22 - move UP; 23 - move DOWN; 24 - move LEFT; 25 - move RIGHT
+ * x and y are current absolute coordinates which has to be sync with: 
+ * C.29 and C.30 (absolute coordinates in SCADA)
+ */
   void manualMode(){
     while(Mb.C[21] == 1){
       Mb.Run();
@@ -174,6 +182,9 @@ void loop() {
   }
   
   //**************************************************
+  /*
+   * Method send parts counter data to SCADA
+   */
   void sendData(){
         Mb.Run();
         Mb.R[31] = redPartCount;
@@ -182,7 +193,6 @@ void loop() {
         Mb.R[34] = colorNumber;
         Mb.Run();
   }
-  
   //**************************************************
   //**************************************************
   // change direction to down and move
@@ -214,11 +224,12 @@ void loop() {
     moveMotors(xRel);
   }
 //****************************************************************************************************
-
 ///////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
-  //waits for permission to move, if gots permission, then moves to grabbing point 
-  // then sends command to FX5U that gripper has been placed
+/*
+ * Waits for permission to move, if gots permission, then moves to grabbing point
+ * then sends command to FX5U that gripper has been placed
+ */
   void firstMove(){
     Mb.Run();
     sendData();
@@ -228,7 +239,6 @@ void loop() {
           checkIfManual();
           sendData();
     }
-    Serial.println("firstMove out of cycle");
     delay(1000);
     digitalWrite(isGripperPlaced, LOW);
     if(digitalRead(allowToMove) == true){
@@ -237,21 +247,25 @@ void loop() {
         if(colorNumber != 0){
           sendCoordForSecondMove(colorNumber);
         }
-//      delay(1000);
       digitalWrite(isGripperPlaced, HIGH);
       delay(2300);
       digitalWrite(isGripperPlaced, LOW);
     }
-     
   }
 
+/*
+ * This method send coordinates of the grabber's point of destination to SCADA
+ * For synchronization of the grabber and it's model 
+ */
   void setPointCoord(int x, int y){
           pointX = x;
           pointY = y;
   }
   
-  //waits for permission to move, if gots permission, then moves to placing point 
-  // then sends command to FX5U that gripper has been placed
+  /*
+   * Waits for permission to move, if gots permission, then moves to placing point
+   * then sends command to FX5U that gripper has been placed
+   */ 
   void secondMove(){
     Mb.Run();
     sendData();
@@ -266,7 +280,7 @@ void loop() {
      if(digitalRead(allowToMove) == true){
         int colorNumber = checkColor(false);
         if(colorNumber != 0){
-          movePart(colorNumber);
+          movePart(colorNumber);        //move grabber
           digitalWrite(isGripperPlaced, HIGH);
         }
      }
@@ -276,7 +290,9 @@ void loop() {
   }
 //////////////////////////////////////////////////////////////////////   
 /////////////////////////////////////////////////////////////////////
-//moves certain part to certain position
+/*
+ * Moves certain part to certain position
+ */
  void movePart(int color){
     int delta;
     for(int i = 0; i < 100; i++){
@@ -518,7 +534,9 @@ void loop() {
   }
 //****************************************************************************************************
 
-//move each motor [impulseCount] times  and change global coordinates : x and y
+/*
+ * Move each motor [impulseCount] times  and change global coordinates : x and y
+ */
   void moveMotors(int impulseCount){
       for(int i = 0; i < impulseCount; i++){
                   moveLeftMotor();
@@ -527,8 +545,10 @@ void loop() {
           }
    }
 
-// changes x and y on one depending on rotation direction  
-// x and y are absolute coordinates
+/* 
+ *  Changes x and y on one depending on rotation direction  
+ *  x and y are absolute coordinates
+ */
   void changeCoord(){
     Mb.Run();
     if(digitalRead(cwLeftMotor) == true){
@@ -579,4 +599,4 @@ void loop() {
         digitalWrite(clkRight, LOW);
         delayMicroseconds(motorSpeed);
   }
-//***************************************************************************
+//*************************************************************************************
